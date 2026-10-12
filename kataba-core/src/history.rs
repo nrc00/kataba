@@ -148,13 +148,20 @@ pub struct History {
     next_id: u64,
     /// LRU clock.
     lru_generation: u64,
-    /// Sum of `approx_bytes` over live revisions.
+    /// Sum of `approx_bytes` over live revisions plus ghost links.
     allocated_bytes: usize,
     /// Byte budget; pruning keeps usage at or below it.
     undo_limit_bytes: usize,
     /// Birth instant for serializable timestamps.
     birth: Instant,
+    /// Pruned child → parent links for precise ancestor fallback.
+    /// Each entry counts [`GHOST_LINK_BYTES`] toward the budget and the
+    /// oldest entries are dropped first when over budget.
+    ghosts: Vec<(RevisionId, RevisionId)>,
 }
+
+/// Budget cost of one ghost parent link.
+const GHOST_LINK_BYTES: usize = 32;
 
 impl Clone for History {
     fn clone(&self) -> Self {
@@ -167,6 +174,7 @@ impl Clone for History {
             allocated_bytes: self.allocated_bytes,
             undo_limit_bytes: self.undo_limit_bytes,
             birth: self.birth,
+            ghosts: self.ghosts.clone(),
         }
     }
 }
@@ -303,8 +311,8 @@ impl History {
         self.index.get(&id).copied()
     }
 
-    /// Prune until within budget: first unreferenced leaves (oldest first),
-    /// then root collapse (fold the oldest root child into the root).
+    /// Prune until within budget: unreferenced leaves (oldest first), then
+    /// root collapse, then ghost links (oldest first, degrades fallback precision).
     /// Never prunes the root or the current revision.
     fn maybe_evict(&mut self) {
         while self.allocated_bytes > self.undo_limit_bytes {
@@ -318,13 +326,20 @@ impl History {
                 self.remove_leaf(victim);
                 continue;
             }
-            if !self.collapse_oldest_root_child() {
-                break;
+            if self.collapse_oldest_root_child() {
+                continue;
             }
+            if !self.ghosts.is_empty() {
+                self.ghosts.remove(0);
+                self.allocated_bytes = self.allocated_bytes.saturating_sub(GHOST_LINK_BYTES);
+                continue;
+            }
+            break;
         }
     }
 
     /// Removes a childless, non-current revision and unlinks it from its parent.
+    /// Leaves a ghost parent link so external references still resolve.
     fn remove_leaf(&mut self, id: RevisionId) {
         let pos = match self.pos_of(id) {
             Some(p) => p,
@@ -344,6 +359,8 @@ impl History {
                     parent.last_child = parent.children.last().copied();
                 }
             }
+            self.ghosts.push((id, parent_id));
+            self.allocated_bytes += GHOST_LINK_BYTES;
         }
     }
 
@@ -401,6 +418,8 @@ impl History {
                 root.last_child = children.last().copied().or(root.children.last().copied());
             }
         }
+        self.ghosts.push((victim, RevisionId::ROOT));
+        self.allocated_bytes += GHOST_LINK_BYTES;
         true
     }
 
@@ -480,27 +499,23 @@ impl History {
     }
 
     /// Nearest live ancestor of `id` (itself when alive). External guard fallback.
+    ///
+    /// Follows ghost parent links left behind by pruning, so a pruned leaf
+    /// resolves to its live parent instead of collapsing all the way to root.
     #[must_use]
     pub fn nearest_live_ancestor(&self, mut id: RevisionId) -> RevisionId {
+        let mut guard = 0usize;
         while !self.is_alive(id) {
-            match self.parent_of(id) {
-                Some(p) => id = p,
+            match self.ghosts.iter().find(|(g, _)| *g == id) {
+                Some((_, parent)) => id = *parent,
                 None => return RevisionId::ROOT,
+            }
+            guard += 1;
+            if guard > self.ghosts.len() + 8 {
+                return RevisionId::ROOT;
             }
         }
         id
-    }
-
-    fn parent_of(&self, id: RevisionId) -> Option<RevisionId> {
-        // Walk storage: only live revisions are indexed, so fall back to a scan
-        // for pruned ids via children links.
-        if let Some(rev) = self.get(id) {
-            return rev.parent;
-        }
-        self.revisions
-            .iter()
-            .find(|r| r.children.contains(&id))
-            .map(|r| r.id)
     }
 
     fn lowest_common_ancestor(&self, mut a: RevisionId, mut b: RevisionId) -> RevisionId {
@@ -798,6 +813,7 @@ impl History {
             allocated_bytes,
             undo_limit_bytes,
             birth,
+            ghosts: Vec::new(),
         })
     }
 }
@@ -828,6 +844,7 @@ impl Default for History {
             allocated_bytes: 256,
             undo_limit_bytes: DEFAULT_UNDO_LIMIT_BYTES,
             birth,
+            ghosts: Vec::new(),
         }
     }
 }
@@ -1137,6 +1154,30 @@ mod tests {
         // Current path still navigable after eviction.
         assert!(history.undo().is_some());
         assert!(history.redo().is_some());
+    }
+
+    #[test]
+    fn test_pruned_leaf_falls_back_to_live_parent() {
+        let mut history = History::default();
+        let mut state = State {
+            doc: Rope::from_str("a"),
+            selection: Selection::point(1),
+        };
+        // Branch A: root -> r1 -> r2. Current: root -> r3.
+        commit_str(&mut history, &mut state, 1, 1, "b");
+        let r1 = history.current_revision();
+        commit_str(&mut history, &mut state, 2, 2, "c");
+        let r2 = history.current_revision();
+        let r2bytes = history.get(r2).expect("r2").approx_bytes;
+        for txn in history.earlier(UndoKind::Steps(10)) {
+            txn.apply_doc(&mut state.doc);
+        }
+        commit_str(&mut history, &mut state, 1, 1, "z");
+        // Budget room for everything except orphan leaf r2 (plus ghost links).
+        history.set_undo_limit_bytes(history.allocated_bytes() - r2bytes + 64);
+        assert!(!history.is_alive(r2));
+        assert!(history.is_alive(r1));
+        assert_eq!(history.nearest_live_ancestor(r2), r1);
     }
 
     #[test]
