@@ -1,0 +1,5 @@
+/target/
+kataba-core/target/
+kataba-lsp/target/
+*.tmp
+.DS_Store
