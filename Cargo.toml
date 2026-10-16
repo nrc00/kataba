@@ -1,5 +1,5 @@
 [workspace]
-members = ["kataba-core", "kataba-lsp"]
+members = ["kataba-core", "kataba-lsp", "kataba-rpc", "kataba-treesitter", "kataba-vcs"]
 resolver = "2"
 
 [profile.release]

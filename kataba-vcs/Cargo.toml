@@ -1,0 +1,42 @@
+[package]
+name = "kataba-vcs"
+version = "0.1.0"
+edition = "2021"
+description = "Independent, capability-gated version-control module for Kataba (git first, jj next)"
+license = "MIT"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+bstr = { version = "1", features = ["std"] }
+gix = { version = "0.85", default-features = false, features = ["status", "attributes", "revision", "max-performance", "sha1"] }
+imara-diff = "0.2"
+thiserror = "1"
+smallvec = "1"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "process", "time", "macros"] }
+notify = { version = "6" }
+
+[dev-dependencies]
+proptest = "1"
+tempfile = "3"
+criterion = "0.5"
+
+[features]
+default = ["git-backend"]
+
+git-backend = []
+actor = []
+cli = []
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }
