@@ -1,0 +1,22 @@
+[package]
+name = "kataba-rpc"
+version = "0.1.0"
+edition = "2021"
+description = "MessagePack-RPC for the Kataba editor, adapted from Neovim's msgpack_rpc"
+license = "MIT"
+
+[dependencies]
+rmpv = "1.3"
+thiserror = "1"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }

@@ -1,0 +1,28 @@
+[package]
+name = "kataba-treesitter"
+version = "0.1.0"
+edition = "2021"
+description = "Tree-sitter bindings, grammar loading, and incremental edit translation for the Kataba editor"
+license = "MIT"
+
+[dependencies]
+kataba-core = { path = "../kataba-core" }
+libloading = "0.8"
+thiserror = "1"
+tree-sitter = "0.25"
+tree-sitter-language = "0.1"
+
+[dev-dependencies]
+proptest = "1"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }

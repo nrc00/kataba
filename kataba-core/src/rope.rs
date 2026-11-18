@@ -24,6 +24,7 @@ impl Rope {
 
     /// Creates a rope from a string.
     #[must_use]
+#[allow(clippy::should_implement_trait)]
     pub fn from_str(text: &str) -> Self {
         Self {
             inner: RopeyRope::from_str(text),
@@ -128,6 +129,18 @@ impl Rope {
     #[must_use]
     pub fn byte_to_char(&self, byte: usize) -> usize {
         self.inner.byte_to_char(byte)
+    }
+
+    /// Returns the chunk containing the given byte offset, along with the byte
+    /// index, char index, and line index of the chunk's start.
+    ///
+    /// Chunks are borrowed slices of the rope's backing storage, which makes
+    /// this the access path for zero-copy consumers such as tree-sitter's
+    /// chunked input callback. Runs in O(log N) time. Panics if
+    /// `byte_idx > byte_len()`.
+    #[must_use]
+    pub fn chunk_at_byte(&self, byte_idx: usize) -> (&str, usize, usize, usize) {
+        self.inner.chunk_at_byte(byte_idx)
     }
 
     /// Returns the number of lines in the rope.

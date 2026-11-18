@@ -1,0 +1,31 @@
+[package]
+name = "kataba-term"
+version = "0.1.0"
+edition = "2021"
+description = "Ratatui terminal frontend for the Kataba editor"
+license = "MIT"
+
+[dependencies]
+kataba-core = { path = "../kataba-core" }
+kataba-treesitter = { path = "../kataba-treesitter" }
+kataba-vcs = { path = "../kataba-vcs" }
+
+crossterm = "0.28"
+ratatui = "0.27"
+tree-sitter = "0.25"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+[dev-dependencies]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }

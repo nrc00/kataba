@@ -65,7 +65,7 @@ pub fn repo_status_gix(
             Item::Modification {
                 rela_path, status, ..
             } => {
-                let path = worktree.join(&*rela_path.to_path()?);
+                let path = worktree.join(rela_path.to_path()?);
                 match status {
                     EntryStatus::Conflict { .. } => FileChange::conflict(path),
                     EntryStatus::Change(change_kind) => match change_kind {
@@ -80,15 +80,15 @@ pub fn repo_status_gix(
             Item::DirectoryContents {
                 entry, ..
             } if entry.status == DirStatus::Untracked => {
-                FileChange::untracked(worktree.join(&*entry.rela_path.to_path()?))
+                FileChange::untracked(worktree.join(entry.rela_path.to_path()?))
             }
             Item::Rewrite {
                 source,
                 dirwalk_entry,
                 ..
             } => FileChange::renamed(
-                worktree.join(&*source.rela_path().to_path()?),
-                worktree.join(&*dirwalk_entry.rela_path.to_path()?),
+                worktree.join(source.rela_path().to_path()?),
+                worktree.join(dirwalk_entry.rela_path.to_path()?),
             ),
             _ => continue,
         };
