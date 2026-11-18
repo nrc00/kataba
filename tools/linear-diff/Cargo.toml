@@ -1,0 +1,11 @@
+[package]
+name = "linear-diff"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kataba-core = { path = "../../kataba-core" }
+helix-core = { path = "../../../helix/helix-core" }
+
+[profile.release]
+opt-level = 3

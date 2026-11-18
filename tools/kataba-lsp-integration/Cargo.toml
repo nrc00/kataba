@@ -1,0 +1,18 @@
+[package]
+name = "kataba-lsp-integration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kataba-lsp = { path = "../../kataba-lsp" }
+kataba-core = { path = "../../kataba-core" }
+tokio = { version = "1.50", features = ["rt", "rt-multi-thread", "io-util", "io-std", "time", "process", "macros", "fs", "parking_lot", "sync"] }
+lsp-types = "0.95"
+url = "2.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tempfile = "3.5"
+
+[dev-dependencies]
+proptest = "1"

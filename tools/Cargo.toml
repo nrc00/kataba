@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "kataba-lsp-integration",
+    "kataba-tests",
+    "treesitter-viz",
+    "undo-demo",
+]
+# These compare against helix-core and need a helix checkout next to kataba:
+#   git clone https://github.com/helix-editor/helix ../helix
+exclude = ["cmp-bench", "diff-test", "linear-diff"]
+resolver = "2"
