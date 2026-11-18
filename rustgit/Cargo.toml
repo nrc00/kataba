@@ -1,0 +1,13 @@
+[package]
+name = "rustgit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+gix = "0.89"
+ratatui = "0.27"
+crossterm = "0.28"
+
+[profile.release]
+opt-level = 3

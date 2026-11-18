@@ -1,5 +1,6 @@
 /target/
 kataba-core/target/
 kataba-lsp/target/
+rustgit/target/
 *.tmp
 .DS_Store

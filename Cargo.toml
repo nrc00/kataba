@@ -1,5 +1,5 @@
 [workspace]
-members = ["kataba-core", "kataba-lsp", "kataba-rpc", "kataba-treesitter", "kataba-vcs", "kataba-term"]
+members = ["kataba-core", "kataba-lsp", "kataba-rpc", "kataba-treesitter", "kataba-vcs", "kataba-term", "rustgit"]
 resolver = "2"
 
 [profile.release]
